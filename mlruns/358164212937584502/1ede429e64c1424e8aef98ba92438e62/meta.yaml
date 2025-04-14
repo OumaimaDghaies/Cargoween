@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/358164212937584502/1ede429e64c1424e8aef98ba92438e62/artifacts
+end_time: 1744544116359
+entry_point_name: ''
+experiment_id: '358164212937584502'
+lifecycle_stage: active
+run_id: 1ede429e64c1424e8aef98ba92438e62
+run_name: RandomForest
+run_uuid: 1ede429e64c1424e8aef98ba92438e62
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744544112056
+status: 3
+tags: []
+user_id: HP

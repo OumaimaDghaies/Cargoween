@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1744544111988
+current_stage: None
+description: ''
+last_updated_timestamp: 1744544111988
+name: Transport_Logistique_Model
+run_id: b4fa59989dae43c189441a93ce6f1979
+run_link: ''
+source: mlflow-artifacts:/358164212937584502/b4fa59989dae43c189441a93ce6f1979/artifacts/knn_model
+status: READY
+status_message: null
+storage_location: mlflow-artifacts:/358164212937584502/b4fa59989dae43c189441a93ce6f1979/artifacts/knn_model
+user_id: null
+version: 6

@@ -1,0 +1,27 @@
+artifact_path: knn_model
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.9.13
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.6.1
+is_signature_from_type_hint: false
+mlflow_version: 2.21.0
+model_size_bytes: 9265
+model_uuid: 7813b290044c4ba89636e98a60bf2971
+prompts: null
+run_id: b3831015530e409aad2e4c74e3fa9e4d
+signature:
+  inputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1, 9]}}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "str", "shape": [-1]}}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2025-04-10 10:50:40.399937'

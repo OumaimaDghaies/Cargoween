@@ -1,0 +1,27 @@
+artifact_path: randomforest_model
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.9.13
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.6.1
+is_signature_from_type_hint: false
+mlflow_version: 2.21.0
+model_size_bytes: 450223
+model_uuid: 64e3b720ada4439eba1d1aa3e81630ae
+prompts: null
+run_id: 1ede429e64c1424e8aef98ba92438e62
+signature:
+  inputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1, 7]}}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "str", "shape": [-1]}}]'
+  params: null
+type_hint_from_example: false
+utc_time_created: '2025-04-13 11:35:12.276930'

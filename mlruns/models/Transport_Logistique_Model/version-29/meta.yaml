@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1744650647721
+current_stage: Production
+description: ''
+last_updated_timestamp: 1744650652300
+name: Transport_Logistique_Model
+run_id: 7a84899abf304de99ff119b4c22493e9
+run_link: ''
+source: mlflow-artifacts:/358164212937584502/7a84899abf304de99ff119b4c22493e9/artifacts/svm_model
+status: READY
+status_message: null
+storage_location: mlflow-artifacts:/358164212937584502/7a84899abf304de99ff119b4c22493e9/artifacts/svm_model
+user_id: null
+version: 29
