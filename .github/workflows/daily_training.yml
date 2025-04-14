@@ -2,23 +2,28 @@ name: Daily Model Training
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Minuit UTC chaque jour
-  workflow_dispatch: # Permet de déclencher manuellement
+    - cron: '0 0 * * *'  # Minuit UTC
+  workflow_dispatch:  # Permet un déclenchement manuel
 
 jobs:
   train-model:
     runs-on: ubuntu-latest
+    env:
+      MLFLOW_TRACKING_URI: http://localhost:5000
     
     services:
       mlflow:
         image: mlflow/mlflow
         ports:
           - 5000:5000
-        options: >-
-          --health-cmd "curl -f http://localhost:5000 || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
+      
+      mongodb:
+        image: mongo
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_USER }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_PASS }}
 
     steps:
     - uses: actions/checkout@v4
@@ -32,26 +37,20 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        sudo apt-get install -y libpoppler-cpp-dev
-        
-    - name: Configure secrets
-      run: |
-        echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
-        echo "MLFLOW_TRACKING_URI=http://localhost:5000" >> .env
+        pip install python-dotenv
     
-    - name: Train model
+    - name: Run training
+      env:
+        MONGO_URI: mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@localhost:27017/
+        DB_NAME: reservation
+        COLLECTION_NAME: ListTransitaire
       run: |
-        source .env
-        python ml_pipeline.py \
-          --mongo-uri "$MONGO_URI" \
-          --db-name "reservation" \
-          --collection "ListTransitaire"
+        python train_model.py
     
-    - name: Archive model artifacts
+    - name: Upload model
+      if: success()
       uses: actions/upload-artifact@v3
-      if: always()
       with:
-        name: model-artifacts
-        path: |
-          best_model.pkl
-          mlruns/
+        name: trained-model
+        path: best_model.pkl
+        retention-days: 7
