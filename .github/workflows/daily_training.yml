@@ -13,14 +13,24 @@ jobs:
     
     services:
       mlflow:
-        image: mlflow/mlflow
+        image: ghcr.io/mlflow/mlflow:latest  # Utilisez l'image GitHub Container Registry
         ports:
           - 5000:5000
+        options: >-
+          --health-cmd "curl -f http://localhost:5000 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
       
       mongodb:
-        image: mongo
+        image: mongo:5.0  # Version spécifique plus stable
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
         env:
           MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_USER }}
           MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_PASS }}
@@ -37,7 +47,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install python-dotenv
+        pip install python-dotenv pymongo
+    
+    - name: Wait for services
+      run: |
+        echo "Waiting for MongoDB to be ready..."
+        timeout 60 bash -c 'until nc -z localhost 27017; do sleep 2; done'
+        echo "Waiting for MLflow to be ready..."
+        timeout 60 bash -c 'until nc -z localhost 5000; do sleep 2; done'
     
     - name: Run training
       env:
@@ -49,9 +66,8 @@ jobs:
     
     - name: Upload model artifact
       if: success()
-      uses: actions/upload-artifact@v4  # Utilisez la version v4
+      uses: actions/upload-artifact@v4
       with:
         name: trained-model-$(date +'%Y-%m-%d')
         path: best_model.pkl
         retention-days: 7
-        compression-level: 0  # Important pour les fichiers .pkl
