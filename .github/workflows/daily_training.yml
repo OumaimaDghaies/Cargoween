@@ -2,16 +2,18 @@ name: Daily Model Training
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Minuit UTC chaque jour
-  workflow_dispatch: # Permet de déclencher manuellement
+    - cron: '0 0 * * *'  # Minuit UTC
+  workflow_dispatch:
 
 jobs:
   train-model:
     runs-on: ubuntu-latest
+    env:
+      MLFLOW_TRACKING_URI: http://localhost:5000
     
     services:
       mlflow:
-        image: mlflow/mlflow
+        image: ghcr.io/mlflow/mlflow:latest  # Utilisez l'image GitHub Container Registry
         ports:
           - 5000:5000
         options: >-
@@ -19,6 +21,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 3
+      
+      mongodb:
+        image: mongo:5.0  # Version spécifique plus stable
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand(\"ping\").ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ secrets.MONGO_USER }}
+          MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_PASS }}
 
     steps:
     - uses: actions/checkout@v4
@@ -32,26 +47,27 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        sudo apt-get install -y libpoppler-cpp-dev
-        
-    - name: Configure secrets
-      run: |
-        echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
-        echo "MLFLOW_TRACKING_URI=http://localhost:5000" >> .env
+        pip install python-dotenv pymongo
     
-    - name: Train model
+    - name: Wait for services
       run: |
-        source .env
-        python ml_pipeline.py \
-          --mongo-uri "$MONGO_URI" \
-          --db-name "reservation" \
-          --collection "ListTransitaire"
+        echo "Waiting for MongoDB to be ready..."
+        timeout 60 bash -c 'until nc -z localhost 27017; do sleep 2; done'
+        echo "Waiting for MLflow to be ready..."
+        timeout 60 bash -c 'until nc -z localhost 5000; do sleep 2; done'
     
-    - name: Archive model artifacts
-      uses: actions/upload-artifact@v3
-      if: always()
+    - name: Run training
+      env:
+        MONGO_URI: mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASS }}@localhost:27017/
+        DB_NAME: reservation
+        COLLECTION_NAME: ListTransitaire
+      run: |
+        python train_model.py
+    
+    - name: Upload model artifact
+      if: success()
+      uses: actions/upload-artifact@v4
       with:
-        name: model-artifacts
-        path: |
-          best_model.pkl
-          mlruns/
+        name: trained-model-$(date +'%Y-%m-%d')
+        path: best_model.pkl
+        retention-days: 7
