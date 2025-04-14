@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/358164212937584502/277a6b05b2a44f16bc05c1da5433866f/artifacts
+end_time: 1744660541286
+entry_point_name: ''
+experiment_id: '358164212937584502'
+lifecycle_stage: active
+run_id: 277a6b05b2a44f16bc05c1da5433866f
+run_name: KNN
+run_uuid: 277a6b05b2a44f16bc05c1da5433866f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744660534358
+status: 3
+tags: []
+user_id: HP

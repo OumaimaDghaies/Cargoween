@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/358164212937584502/0066691d9c2442ca89f36b6e0986c376/artifacts
+end_time: 1744660058815
+entry_point_name: ''
+experiment_id: '358164212937584502'
+lifecycle_stage: active
+run_id: 0066691d9c2442ca89f36b6e0986c376
+run_name: GradientBoosting
+run_uuid: 0066691d9c2442ca89f36b6e0986c376
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1744660054183
+status: 3
+tags: []
+user_id: HP

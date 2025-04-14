@@ -1,0 +1,47 @@
+2025-04-14 20:39:15,062 - INFO - === DÉMARRAGE DE L'ENTRAÎNEMENT ===
+2025-04-14 20:39:15,062 - INFO - Connexion à MongoDB - DB: reservation, Collection: ListTransitaire
+2025-04-14 20:39:45,826 - ERROR - Échec de l'entraînement: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+Traceback (most recent call last):
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 42, in train_and_save_model
+    if best_model_name:
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python39\lib\site-packages\pandas\core\generic.py", line 1577, in __nonzero__
+    raise ValueError(
+ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-04-14 21:47:07,300 - INFO - === DÉMARRAGE DE L'ENTRAÎNEMENT ===
+2025-04-14 21:47:07,300 - INFO - Connexion à MongoDB - DB: reservation, Collection: ListTransitaire
+2025-04-14 21:47:41,538 - ERROR - Échec de l'entraînement: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+Traceback (most recent call last):
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 42, in train_and_save_model
+    if best_model_name:
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python39\lib\site-packages\pandas\core\generic.py", line 1577, in __nonzero__
+    raise ValueError(
+ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-04-14 21:53:05,478 - INFO - === DÉMARRAGE DE L'ENTRAÎNEMENT ===
+2025-04-14 21:53:05,479 - ERROR - Échec de l'entraînement: L'URI MongoDB n'est pas configurée
+Traceback (most recent call last):
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 42, in train_and_save_model
+    with get_mongo_client() as client:
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 26, in get_mongo_client
+    raise ValueError("L'URI MongoDB n'est pas configurée")
+ValueError: L'URI MongoDB n'est pas configurée
+2025-04-14 21:54:38,992 - INFO - === DÉMARRAGE DE L'ENTRAÎNEMENT ===
+2025-04-14 21:54:38,993 - ERROR - Échec de l'entraînement: L'URI MongoDB n'est pas configurée
+Traceback (most recent call last):
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 43, in train_and_save_model
+    with get_mongo_client() as client:
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 26, in get_mongo_client
+    raise ValueError("L'URI MongoDB n'est pas configurée")
+ValueError: L'URI MongoDB n'est pas configurée
+2025-04-14 21:55:30,228 - INFO - === DÉMARRAGE DE L'ENTRAÎNEMENT ===
+2025-04-14 21:55:30,229 - INFO - Connexion à MongoDB - DB: reservation, Collection: ListTransitaire
+2025-04-14 21:56:05,839 - ERROR - Échec de l'entraînement: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+Traceback (most recent call last):
+  File "C:\Users\HP\Desktop\TransitaireCargoween\train_model.py", line 42, in train_and_save_model
+    if best_model_name:
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python39\lib\site-packages\pandas\core\generic.py", line 1577, in __nonzero__
+    raise ValueError(
+ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-04-14 22:02:55,956 - INFO - === DÉMARRAGE DE L'ENTRAÎNEMENT ===
+2025-04-14 22:02:55,957 - INFO - Connexion à MongoDB - DB: reservation, Collection: ListTransitaire
+2025-04-14 22:03:35,489 - INFO - Modèle sauvegardé (taille: 0.02 MB)
+2025-04-14 22:03:35,518 - INFO - Backup du modèle créé: model_backups/best_model_20250414_220335.pkl

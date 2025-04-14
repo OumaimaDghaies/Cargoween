@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1744655982952
+current_stage: None
+description: ''
+last_updated_timestamp: 1744655982952
+name: Transport_Logistique_Model
+run_id: a11128ee841b4fc9b28f8040fd8c2f24
+run_link: ''
+source: mlflow-artifacts:/358164212937584502/a11128ee841b4fc9b28f8040fd8c2f24/artifacts/gradientboosting_model
+status: READY
+status_message: null
+storage_location: mlflow-artifacts:/358164212937584502/a11128ee841b4fc9b28f8040fd8c2f24/artifacts/gradientboosting_model
+user_id: null
+version: 40

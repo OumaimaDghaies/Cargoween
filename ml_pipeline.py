@@ -180,8 +180,15 @@ def load_production_model():
     model_name = "Transport_Logistique_Model"
     
     try:
-        prod_model = client.get_latest_versions(model_name, stages=["Production"])[0]
-        model_uri = f"models:/{model_name}/Production"
+        # Alternative à get_latest_versions
+        latest_versions = client.search_model_versions(f"name='{model_name}'")
+        prod_models = [v for v in latest_versions if v.current_stage == "Production"]
+        
+        if not prod_models:
+            raise ValueError("Aucun modèle en production trouvé")
+            
+        prod_model = prod_models[0]
+        model_uri = f"models:/{model_name}/{prod_model.version}"
         model = mlflow.sklearn.load_model(model_uri)
         print(f"\n✅ Modèle en production chargé : {prod_model.run_id}")
         return model
