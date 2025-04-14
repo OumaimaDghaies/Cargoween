@@ -3,7 +3,7 @@ name: Daily Model Training
 on:
   schedule:
     - cron: '0 0 * * *'  # Minuit UTC
-  workflow_dispatch:  # Permet un déclenchement manuel
+  workflow_dispatch:
 
 jobs:
   train-model:
@@ -47,10 +47,11 @@ jobs:
       run: |
         python train_model.py
     
-    - name: Upload model
+    - name: Upload model artifact
       if: success()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Utilisez la version v4
       with:
-        name: trained-model
+        name: trained-model-$(date +'%Y-%m-%d')
         path: best_model.pkl
         retention-days: 7
+        compression-level: 0  # Important pour les fichiers .pkl
