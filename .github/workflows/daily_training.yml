@@ -53,10 +53,14 @@ jobs:
       if: always()
       uses: slackapi/slack-github-action@v1
       with:
-        channel-id: '#siteweb'  # Remplacez par l'ID du canal
+        # Méthode 1 : Avec un botToken (recommandé)
+        slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}  # Token OAuth de votre app Slack
+        channel-id: '#siteweb'  # ID du canal Slack
+    
+        # OU Méthode 2 : Avec une webhook (alternative)
+        # slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
         slack-message: |
           :github: *Workflow "${{ github.workflow }}" terminé*
           *Statut*: ${{ job.status }}
           *Détails*: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      env:
-        SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
