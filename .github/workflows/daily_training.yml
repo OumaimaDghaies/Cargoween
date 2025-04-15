@@ -47,19 +47,29 @@ jobs:
         name: trained-model-${{ github.run_id }}-${{ github.run_number }}
         path: best_model.pkl
 
+    - name: Commit and push model to repo
+      if: success()
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git pull
+        git add best_model.pkl
+        git commit -m "Auto-update model $(date +'%Y-%m-%d')"
+        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
     - name: Send email notification
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 465
-        username: ${{ secrets.EMAIL_SENDER }}  # Votre adresse Gmail complète
-        password: ${{ secrets.EMAIL_PASSWORD }}  # Mot de passe d'application généré
+        username: ${{ secrets.EMAIL_SENDER }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
         subject: "Workflow ${{ github.workflow }} - ${{ job.status }}"
-        html_body: |  # <-- Remplace 'body' et 'content_type'
+        html_body: |
           <p><strong>Statut</strong>: ${{ job.status }}</p>
           <p><strong>Dépôt</strong>: ${{ github.repository }}</p>
           <p><strong>Lien</strong>: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Voir le workflow</a></p>
-        to: ${{ secrets.EMAIL_RECIPIENT }}  # Adresse de destination
+        to: ${{ secrets.EMAIL_RECIPIENT }}
         from: GitHub Actions
-        secure: true  # Important pour Gmail
+        secure: true
