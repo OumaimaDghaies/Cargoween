@@ -33,11 +33,11 @@ jobs:
     - name: Start MLflow server (background)
       run: |
         mlflow server --backend-store-uri sqlite:///mlruns/mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 &
-        sleep 5  # Attendre que le serveur démarre
+        sleep 5
 
     - name: Run training
       env:
-        MONGO_URI: mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true
+        MONGO_URI: ${{ secrets.MONGO_URI }}  # Utilisez un secret !
       run: |
         python train_model.py
     
@@ -48,3 +48,15 @@ jobs:
         name: trained-model-$(date +'%Y-%m-%d')
         path: best_model.pkl
         retention-days: 7
+
+    - name: Slack Notification
+      if: always()
+      uses: slackapi/slack-github-action@v1
+      with:
+        channel-id: '#siteweb'  # Remplacez par l'ID du canal
+        slack-message: |
+          :github: *Workflow "${{ github.workflow }}" terminé*
+          *Statut*: ${{ job.status }}
+          *Détails*: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      env:
+        SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
