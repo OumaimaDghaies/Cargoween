@@ -37,7 +37,7 @@ jobs:
 
     - name: Run training
       env:
-        MONGO_URI: mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority
+        MONGO_URI: mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority&tls=true&tlsAllowInvalidCertificates=true
       run: |
         python train_model.py
     
