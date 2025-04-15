@@ -60,7 +60,6 @@ jobs:
           <p><strong>Statut</strong>: ${{ job.status }}</p>
           <p><strong>Dépôt</strong>: ${{ github.repository }}</p>
           <p><strong>Lien</strong>: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Voir le workflow</a></p>
-          <p><strong>Date</strong>: $(date -u +"%Y-%m-%d %H:%M:%S UTC")</p>
         to: ${{ secrets.EMAIL_RECIPIENT }}  # Adresse de destination
         from: GitHub Actions
         secure: true  # Important pour Gmail
