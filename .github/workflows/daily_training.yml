@@ -54,8 +54,8 @@ jobs:
       uses: slackapi/slack-github-action@v1
       with:
         # Méthode 1 : Avec un botToken (recommandé)
-        slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}  # Token OAuth de votre app Slack
-        channel-id: '#siteweb'  # ID du canal Slack
+        slack-bot-token: ${{ secrets.SLACK_TOKEN }}  # Token OAuth de votre app Slack
+        channel-id: 'C08MTUB9963'  # ID du canal Slack
     
         # OU Méthode 2 : Avec une webhook (alternative)
         # slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
