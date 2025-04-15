@@ -17,7 +17,12 @@ from mlflow.tracking import MlflowClient
 from pymongo.server_api import ServerApi
 
 def load_and_prepare_data(connection_string, db_name, collection_name):
-    client = MongoClient(connection_string, server_api=ServerApi('1'))
+    client = MongoClient(
+        connection_string,
+        server_api=ServerApi('1'),
+        tls=True,
+        tlsAllowInvalidCertificates=True  # Nécessaire dans certains environnements CI
+    )
     
     try:
         client.admin.command('ping')
