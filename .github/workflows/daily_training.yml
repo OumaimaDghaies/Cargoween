@@ -50,19 +50,19 @@ jobs:
         retention-days: 7
 
     - name: Send email notification
-      if: always()  # Toujours notifier
+      if: always()
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 465
-        username: ${{ secrets.EMAIL_SENDER }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
+        username: ${{ secrets.EMAIL_SENDER }}  # Votre adresse Gmail complète
+        password: ${{ secrets.EMAIL_PASSWORD }}  # Mot de passe d'application généré
         subject: "Workflow ${{ github.workflow }} - ${{ job.status }}"
-        body: |
-          Statut : ${{ job.status }}
-          Dépôt : ${{ github.repository }}
-          Lien : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          Date : $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-        to: ${{ secrets.EMAIL_RECIPIENT }}
+        html_body: |  # <-- Remplace 'body' et 'content_type'
+          <p><strong>Statut</strong>: ${{ job.status }}</p>
+          <p><strong>Dépôt</strong>: ${{ github.repository }}</p>
+          <p><strong>Lien</strong>: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Voir le workflow</a></p>
+          <p><strong>Date</strong>: $(date -u +"%Y-%m-%d %H:%M:%S UTC")</p>
+        to: ${{ secrets.EMAIL_RECIPIENT }}  # Adresse de destination
         from: GitHub Actions
-        content_type: text/html  # Permet le formatage HTML
+        secure: true  # Important pour Gmail
