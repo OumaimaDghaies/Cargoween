@@ -42,12 +42,10 @@ jobs:
         python train_model.py
     
     - name: Upload model artifact
-      if: success()
       uses: actions/upload-artifact@v4
       with:
-        name: trained-model-$(date +'%Y-%m-%d')
+        name: trained-model-${{ github.run_id }}-${{ github.run_number }}
         path: best_model.pkl
-        retention-days: 7
 
     - name: Send email notification
       if: always()
