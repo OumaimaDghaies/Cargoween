@@ -37,7 +37,7 @@ jobs:
 
     - name: Run training
       env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}  # Utilisez un secret !
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         python train_model.py
     
@@ -49,18 +49,20 @@ jobs:
         path: best_model.pkl
         retention-days: 7
 
-    - name: Slack Notification
-      if: always()
-      uses: slackapi/slack-github-action@v1
+    - name: Send email notification
+      if: always()  # Toujours notifier
+      uses: dawidd6/action-send-mail@v3
       with:
-        # Méthode 1 : Avec un botToken (recommandé)
-        slack-bot-token: ${{ secrets.SLACK_TOKEN }}  # Token OAuth de votre app Slack
-        channel-id: 'C08MTUB9963'  # ID du canal Slack
-    
-        # OU Méthode 2 : Avec une webhook (alternative)
-        # slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-    
-        slack-message: |
-          :github: *Workflow "${{ github.workflow }}" terminé*
-          *Statut*: ${{ job.status }}
-          *Détails*: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_SENDER }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "Workflow ${{ github.workflow }} - ${{ job.status }}"
+        body: |
+          Statut : ${{ job.status }}
+          Dépôt : ${{ github.repository }}
+          Lien : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Date : $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        to: ${{ secrets.EMAIL_RECIPIENT }}
+        from: GitHub Actions
+        content_type: text/html  # Permet le formatage HTML
