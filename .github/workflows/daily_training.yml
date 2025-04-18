@@ -43,67 +43,24 @@ jobs:
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
-        # Supprimer l'ancien modèle pour forcer la régénération
         if [ -f "best_model.pkl" ]; then
           rm -f best_model.pkl
           echo "Ancien modèle supprimé"
         fi
         
-        # Exécuter l'entraînement avec vérification
         python train_model.py
         
-        # Vérifier que le nouveau modèle a été créé
         if [ ! -f "best_model.pkl" ]; then
-          echo "ERREUR: best_model.pkl n'a pas été généré"
+          echo "ERREUR: best_model.pkl manquant"
           exit 1
         fi
         
-        # Afficher les métadonnées pour vérification
-        python -c "import joblib; print('=== METADONNEES ===', joblib.load('best_model.pkl').metadata)"
+        python -c "import joblib; print('=== METADONNEES ===', joblib.load('best_model.pkl')['metadata'])"
 
-    - name: Upload model artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: trained-model-${{ github.run_id }}
-        path: best_model.pkl
-
-    - name: Push model and backups to Git
+    - name: Push to GitHub
       run: |
-        # Configurer Git
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        
-        # Ajouter tous les fichiers de modèle
-        git add best_model.pkl
-        git add model_backups/*
-        
-        # Vérifier les changements
-        if git diff-index --quiet HEAD --; then
-          echo "Aucun changement détecté, création d'un commit vide"
-          git commit --allow-empty -m "Model training completed - Run ${{ github.run_id }}"
-        else
-          echo "Changements détectés, création du commit"
-          git commit -m "Update model and backups - Run ${{ github.run_id }}"
-        fi
-        
-        # Pousser les changements
-        git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
-    - name: Send email notification
-      if: always()
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        username: ${{ secrets.EMAIL_SENDER }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "Workflow ${{ github.workflow }} - ${{ job.status }}"
-        html_body: |
-          <p><strong>Statut</strong>: ${{ job.status }}</p>
-          <p><strong>Run ID</strong>: ${{ github.run_id }}</p>
-          <p><strong>Dépôt</strong>: ${{ github.repository }}</p>
-          <p><strong>Lien</strong>: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Voir le workflow</a></p>
-          <p><strong>Métadonnées du modèle</strong>: ${{ steps.train.outputs.model_metadata }}</p>
-        to: ${{ secrets.EMAIL_RECIPIENT }}
-        from: GitHub Actions
-        secure: true
+        git add best_model.pkl model_backups/*
+        git commit -m "Update model ${{ github.run_id }}"
+        git push
