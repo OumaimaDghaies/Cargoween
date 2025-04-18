@@ -73,21 +73,17 @@ def train_and_save_model():
         # Sauvegarde du modèle
         save_model(model)
         
-        # Vérification et sauvegarde du modèle
+        # Vérification de la taille du modèle
         if os.path.exists("best_model.pkl"):
             model_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
             logger.info(f"Modèle sauvegardé (taille: {model_size:.2f} MB)")
-            
-            # Sauvegarde supplémentaire avec timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = f"model_backups/best_model_{timestamp}.pkl"
-            os.makedirs("model_backups", exist_ok=True)
-            joblib.dump(joblib.load("best_model.pkl"), backup_path)
-            logger.info(f"Backup du modèle créé: {backup_path}")
-            
             return True
             
         logger.error("Aucun modèle n'a été sauvegardé dans best_model.pkl")
+        return False
+
+    except Exception as e:
+        logger.error(f"Échec de l'entraînement: {str(e)}", exc_info=True)
         return False
 if __name__ == "__main__":
     success = train_and_save_model()
