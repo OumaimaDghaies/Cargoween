@@ -81,18 +81,19 @@ jobs:
         TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
         cp best_model.pkl "model_backups/best_model_${TIMESTAMP}.pkl"
         
-        # Ajouter les fichiers au staging
-        git add best_model.pkl
-        git add model_backups/*
+        # FORCER le commit même si le contenu est identique
+        git add -f best_model.pkl
+        git add -f model_backups/*
         
-        # Vérifier s'il y a des changements à committer
-        if git diff-index --quiet HEAD --; then
-          echo "Aucun changement détecté dans les fichiers du modèle."
-        else
-          echo "Changements détectés. Création du commit..."
-          git commit -m "Update model and backups - ${TIMESTAMP}"
-          git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
-        fi
+        # Créer un fichier metadata pour forcer un changement
+        echo "Last training: ${TIMESTAMP}" > model_metadata.txt
+        git add -f model_metadata.txt
+        
+        # Committer même si Git ne détecte pas de changement
+        git commit --allow-empty -m "Force model update - ${TIMESTAMP}"
+        
+        # Pousser les changements
+        git push https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
         
     - name: Send email notification
       if: always()
