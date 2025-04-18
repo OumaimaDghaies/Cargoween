@@ -17,24 +17,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def clean_previous_artifacts():
-    """Nettoie les artefacts des précédentes exécutions"""
-    try:
-        if os.path.exists("best_model.pkl"):
-            os.remove("best_model.pkl")
-            logger.info("Ancien modèle supprimé")
-        
-        if os.path.exists("mlartifacts"):
-            shutil.rmtree("mlartifacts")
-            logger.info("Anciens artefacts ML supprimés")
-    except Exception as e:
-        logger.warning(f"Erreur lors du nettoyage: {str(e)}")
 
+def clean_previous_files():
+    """Supprime les fichiers précédents pour forcer une nouvelle génération"""
+    if os.path.exists("best_model.pkl"):
+        os.remove("best_model.pkl")
+    if os.path.exists("mlartifacts"):
+        shutil.rmtree("mlartifacts")
+    if os.path.exists("mlruns"):
+        shutil.rmtree("mlruns")
 def train_and_save_model():
     """Exécute le pipeline d'entraînement et sauvegarde le modèle"""
     try:
-        # Nettoyage initial
-        clean_previous_artifacts()
+        clean_previous_files()
         
         # Charger les variables d'environnement
         load_dotenv()
