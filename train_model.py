@@ -48,8 +48,8 @@ def train_and_save_model():
         # Charger les variables d'environnement
         load_dotenv()
         
-        # Configuration avec validation
-        MONGO_CONNECTION_STRING = os.getenv("MONGO_URI", "mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority")
+         # Configuration avec validation
+        MONGO_CONNECTION_STRING = "mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority"
         DB_NAME = os.getenv("DB_NAME", "reservation")
         COLLECTION_NAME = os.getenv("COLLECTION_NAME", "ListTransitaire")
         
