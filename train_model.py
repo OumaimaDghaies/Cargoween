@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from datetime import datetime
+import shutil
 
 # Configuration du logging
 logging.basicConfig(
@@ -16,55 +17,83 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def clean_previous_artifacts():
+    """Nettoie les artefacts des précédentes exécutions"""
+    try:
+        if os.path.exists("best_model.pkl"):
+            os.remove("best_model.pkl")
+            logger.info("Ancien modèle supprimé")
+        
+        if os.path.exists("mlartifacts"):
+            shutil.rmtree("mlartifacts")
+            logger.info("Anciens artefacts ML supprimés")
+    except Exception as e:
+        logger.warning(f"Erreur lors du nettoyage: {str(e)}")
+
 def train_and_save_model():
     """Exécute le pipeline d'entraînement et sauvegarde le modèle"""
     try:
+        # Nettoyage initial
+        clean_previous_artifacts()
+        
         # Charger les variables d'environnement
         load_dotenv()
         
-        # Configuration avec validation
         MONGO_CONNECTION_STRING = "mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority"
         DB_NAME = os.getenv("DB_NAME", "reservation")
         COLLECTION_NAME = os.getenv("COLLECTION_NAME", "ListTransitaire")
         
         if not MONGO_CONNECTION_STRING:
-            raise ValueError("L'URI MongoDB n'est pas configurée dans les variables d'environnement")
+            raise ValueError("L'URI MongoDB n'est pas configurée")
 
         logger.info("=== DÉMARRAGE DE L'ENTRAÎNEMENT ===")
         logger.info(f"Connexion à MongoDB - DB: {DB_NAME}, Collection: {COLLECTION_NAME}")
         
         # Exécution du pipeline
-        result = run_ml_pipeline(
+        model = run_ml_pipeline(
             MONGO_CONNECTION_STRING,
             DB_NAME,
             COLLECTION_NAME
         )
         
-        if result is None:
-            logger.error("Le pipeline a retourné None, vérifiez les logs précédents")
-            return False
+        if model is None:
+            raise ValueError("Le pipeline a retourné None")
             
-        # Vérification et sauvegarde du modèle
-        if os.path.exists("best_model.pkl"):
-            model_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
-            logger.info(f"Modèle sauvegardé (taille: {model_size:.2f} MB)")
+        # Sauvegarde du nouveau modèle
+        joblib.dump(model, "best_model.pkl")
+        logger.info("Nouveau modèle sauvegardé dans best_model.pkl")
+        
+        # Vérification de la sauvegarde
+        if not os.path.exists("best_model.pkl"):
+            raise FileNotFoundError("Le modèle n'a pas été sauvegardé correctement")
             
-            # Sauvegarde supplémentaire avec timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = f"model_backups/best_model_{timestamp}.pkl"
-            os.makedirs("model_backups", exist_ok=True)
-            joblib.dump(joblib.load("best_model.pkl"), backup_path)
-            logger.info(f"Backup du modèle créé: {backup_path}")
-            
-            return True
-            
-        logger.error("Aucun modèle n'a été sauvegardé dans best_model.pkl")
-        return False
+        # Informations de debug
+        file_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
+        mod_time = datetime.fromtimestamp(os.path.getmtime("best_model.pkl"))
+        logger.info(f"Taille du modèle: {file_size:.2f} MB")
+        logger.info(f"Dernière modification: {mod_time}")
+        
+        # Sauvegarde supplémentaire avec timestamp
+        os.makedirs("model_backups", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = f"model_backups/best_model_{timestamp}.pkl"
+        joblib.dump(model, backup_path)
+        logger.info(f"Backup du modèle créé: {backup_path}")
+        
+        return True
 
     except Exception as e:
-        logger.error(f"Échec de l'entraînement: {str(e)}", exc_info=True)
+        logger.error(f"Échec critique de l'entraînement: {str(e)}", exc_info=True)
         return False
 
 if __name__ == "__main__":
+    logger.info("=== LANCEMENT DU SCRIPT ===")
     success = train_and_save_model()
+    
+    # Debug supplémentaire
+    if os.path.exists("best_model.pkl"):
+        logger.info(f"Vérification finale - Modèle existe, modifié le: {datetime.fromtimestamp(os.path.getmtime('best_model.pkl'))}")
+    else:
+        logger.error("Vérification finale - Modèle non trouvé!")
+    
     exit(0 if success else 1)
