@@ -56,10 +56,11 @@ jobs:
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git pull
+        # N'ajouter que le modèle et ses backups
         git add best_model.pkl
-        git commit -m "Auto-update model $(date +'%Y-%m-%d')"
-        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
+        git add model_backups/
+        # Créer un commit seulement s'il y a des changements
+        git diff --cached --quiet || (git commit -m "Auto-update model $(date +'%Y-%m-%d')" && git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git)
     - name: Send email notification
       if: always()
       uses: dawidd6/action-send-mail@v3
