@@ -28,12 +28,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install python-dotenv pymongo mlflow pymongo[srv] scikit-learn
+        pip install python-dotenv pymongo mlflow pymongo[srv]
 
-    - name: Create directories
-      run: |
-        mkdir -p mlruns
-        mkdir -p model_backups
+    - name: Create MLflow directory
+      run: mkdir -p mlruns
 
     - name: Start MLflow server (background)
       run: |
@@ -41,42 +39,26 @@ jobs:
         sleep 5
 
     - name: Run training
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         python train_model.py
     
-    - name: Upload model artifacts
+    - name: Upload model artifact
       uses: actions/upload-artifact@v4
       with:
-        name: model-artifacts-${{ github.run_id }}
+        name: trained-model-${{ github.run_id }}-${{ github.run_number }}
         path: best_model.pkl
 
-    - name: Commit and push model
+    - name: Commit and push model to repo
       if: success()
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git pull
-        
-        # Nettoyer les fichiers non désirés
-        git restore --staged __pycache__/ training.log
-        git clean -fd -- __pycache__/ mlruns/ model_backups/
-        
-        # Vérifier et committer uniquement le modèle principal
-        if [ -f "best_model.pkl" ]; then
-          git add best_model.pkl
-          git commit -m "Auto-update model $(date +'%Y-%m-%d')"
-          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-        else
-          echo "Aucun modèle à committer"
-          exit 0
-        fi
-
-    - name: Clean up
-      run: |
-        rm -rf __pycache__/
-        rm -rf mlruns/
-        rm -rf model_backups/
-        rm -f training.log
+        git add best_model.pkl
+        git commit -m "Auto-update model $(date +'%Y-%m-%d')"
+        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
     - name: Send email notification
       if: always()
