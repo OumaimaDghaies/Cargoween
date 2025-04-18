@@ -28,10 +28,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install python-dotenv pymongo mlflow pymongo[srv]
+        pip install python-dotenv pymongo mlflow pymongo[srv] scikit-learn
 
-    - name: Create MLflow directory
-      run: mkdir -p mlruns
+    - name: Create directories
+      run: |
+        mkdir -p mlruns
+        mkdir -p model_backups
 
     - name: Start MLflow server (background)
       run: |
@@ -39,38 +41,39 @@ jobs:
         sleep 5
 
     - name: Run training
-      env:
-        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         python train_model.py
     
-    - name: Upload model artifact
+    - name: Upload model artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: trained-model-${{ github.run_id }}-${{ github.run_number }}
-        path: model_artifacts/  # Modifier selon où votre script sauvegarde le modèle
+        name: model-artifacts-${{ github.run_id }}
+        path: |
+          best_model.pkl
+          training.log
+          model_backups/
 
-    - name: Commit and push model to repo
+    - name: Commit and push model
       if: success()
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git pull
         
-        # Vérifier si le fichier modèle existe avant de commit
+        # Ajouter uniquement le modèle principal
         if [ -f "best_model.pkl" ]; then
           git add best_model.pkl
           git commit -m "Auto-update model $(date +'%Y-%m-%d')"
           git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         else
-          echo "Aucun nouveau modèle à committer"
+          echo "Aucun modèle à committer"
           exit 0
         fi
 
-    - name: Clean up MLflow artifacts
+    - name: Clean up
       run: |
-        rm -rf mlruns/
         rm -rf __pycache__/
+        rm -rf mlruns/
 
     - name: Send email notification
       if: always()
