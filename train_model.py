@@ -21,21 +21,24 @@ logger = logging.getLogger(__name__)
 def save_model(model):
     """Sauvegarde le modèle avec métadonnées"""
     try:
-        # Ajouter des métadonnées
-        model.metadata = {
-            "training_time": datetime.now().isoformat(),
-            "git_commit": Repo(search_parent_directories=True).head.object.hexsha,
-            "version": os.getenv("MODEL_VERSION", "1.0.0")
+        # Créer un conteneur pour le modèle et les métadonnées
+        model_package = {
+            "model_object": model,
+            "metadata": {
+                "training_time": datetime.now().isoformat(),
+                "git_commit": Repo(search_parent_directories=True).head.object.hexsha,
+                "version": os.getenv("MODEL_VERSION", "1.0.0")
+            }
         }
         
-        # Sauvegarder (écrase l'ancien fichier)
-        joblib.dump(model, "best_model.pkl")
+        # Sauvegarder
+        joblib.dump(model_package, "best_model.pkl")
         logger.info("Modèle principal sauvegardé dans best_model.pkl")
         
         # Backup avec timestamp
         os.makedirs("model_backups", exist_ok=True)
         backup_path = f"model_backups/best_model_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pkl"
-        joblib.dump(model, backup_path)
+        joblib.dump(model_package, backup_path)
         logger.info(f"Backup du modèle créé: {backup_path}")
         
     except Exception as e:
@@ -48,7 +51,7 @@ def train_and_save_model():
         # Charger les variables d'environnement
         load_dotenv()
         
-         # Configuration avec validation
+        # Configuration avec validation
         MONGO_CONNECTION_STRING = "mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority"
         DB_NAME = os.getenv("DB_NAME", "reservation")
         COLLECTION_NAME = os.getenv("COLLECTION_NAME", "ListTransitaire")
@@ -73,22 +76,19 @@ def train_and_save_model():
         # Sauvegarde du modèle
         save_model(model)
         
-        # Vérification et sauvegarde du modèle
+        # Vérification
         if os.path.exists("best_model.pkl"):
             model_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
             logger.info(f"Modèle sauvegardé (taille: {model_size:.2f} MB)")
-            
-            # Sauvegarde supplémentaire avec timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = f"model_backups/best_model_{timestamp}.pkl"
-            os.makedirs("model_backups", exist_ok=True)
-            joblib.dump(joblib.load("best_model.pkl"), backup_path)
-            logger.info(f"Backup du modèle créé: {backup_path}")
-            
             return True
             
         logger.error("Aucun modèle n'a été sauvegardé dans best_model.pkl")
         return False
+
+    except Exception as e:
+        logger.error(f"Échec de l'entraînement: {str(e)}", exc_info=True)
+        return False
+
 if __name__ == "__main__":
     success = train_and_save_model()
     exit(0 if success else 1)
