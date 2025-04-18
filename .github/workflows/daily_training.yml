@@ -49,18 +49,25 @@ jobs:
       with:
         name: trained-model-${{ github.run_id }}-${{ github.run_number }}
         path: best_model.pkl
-
     - name: Commit and push model to repo
       if: success()
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git pull
-        # N'ajouter que le modèle et ses backups
-        git add best_model.pkl
-        git add model_backups/
-        # Créer un commit seulement s'il y a des changements
-        git diff --cached --quiet || (git commit -m "Auto-update model $(date +'%Y-%m-%d')" && git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git)
+        
+        # Force l'ajout du modèle (même si gitignore pourrait l'ignorer)
+        git add -f best_model.pkl
+        
+        # Vérifie s'il y a des changements à committer
+        if git diff --cached --quiet; then
+          echo "Aucun changement détecté dans best_model.pkl"
+          # Force un nouveau commit même si le contenu est identique (le modèle a pu changer malgré même taille)
+          git commit --allow-empty -m "Mise à jour du modèle $(date +'%Y-%m-%d %H:%M:%S')"
+        else
+          git commit -m "Mise à jour du modèle $(date +'%Y-%m-%d %H:%M:%S')"
+        fi
+        
+        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
     - name: Send email notification
       if: always()
       uses: dawidd6/action-send-mail@v3
