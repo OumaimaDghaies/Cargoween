@@ -42,31 +42,46 @@ jobs:
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
+        # Supprimer l'ancien modèle pour forcer la régénération
+        if [ -f "best_model.pkl" ]; then
+          rm -f best_model.pkl
+          echo "Ancien modèle supprimé"
+        fi
+        
+        # Exécuter l'entraînement avec vérification
         python train_model.py
+        
+        # Vérifier que le nouveau modèle a été créé
+        if [ ! -f "best_model.pkl" ]; then
+          echo "ERREUR: best_model.pkl n'a pas été généré"
+          exit 1
+        fi
+        
+        # Afficher les infos du fichier pour le debug
+        ls -lh best_model.pkl
+        stat best_model.pkl
     
     - name: Upload model artifact
       uses: actions/upload-artifact@v4
       with:
         name: trained-model-${{ github.run_id }}-${{ github.run_number }}
         path: best_model.pkl
-    - name: Commit and push model to repo
+
+    
+    - name: Force model update in Git
       if: success()
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         
-        # Force l'ajout du modèle (même si gitignore pourrait l'ignorer)
+        # Pull les derniers changements
+        git pull origin main
+        
+        # Ajouter le modèle et forcer le commit
         git add -f best_model.pkl
+        git commit -m "Forced model update $(date +'%Y-%m-%d %H:%M:%S')"
         
-        # Vérifie s'il y a des changements à committer
-        if git diff --cached --quiet; then
-          echo "Aucun changement détecté dans best_model.pkl"
-          # Force un nouveau commit même si le contenu est identique (le modèle a pu changer malgré même taille)
-          git commit --allow-empty -m "Mise à jour du modèle $(date +'%Y-%m-%d %H:%M:%S')"
-        else
-          git commit -m "Mise à jour du modèle $(date +'%Y-%m-%d %H:%M:%S')"
-        fi
-        
+        # Forcer le push
         git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
     - name: Send email notification
       if: always()
