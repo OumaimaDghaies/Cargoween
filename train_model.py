@@ -17,78 +17,94 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 def clean_previous_files():
-    """Supprime les fichiers précédents pour forcer une nouvelle génération"""
-    if os.path.exists("best_model.pkl"):
-        os.remove("best_model.pkl")
-    if os.path.exists("mlartifacts"):
-        shutil.rmtree("mlartifacts")
-    if os.path.exists("mlruns"):
-        shutil.rmtree("mlruns")
+    """Nettoie tous les artefacts des précédentes exécutions"""
+    try:
+        # Suppression du modèle principal
+        if os.path.exists("best_model.pkl"):
+            os.remove("best_model.pkl")
+            logger.info("Ancien modèle principal supprimé")
+        
+        # Suppression des artefacts MLflow
+        for folder in ["mlartifacts", "mlruns"]:
+            if os.path.exists(folder):
+                shutil.rmtree(folder)
+                logger.info(f"Dossier {folder} supprimé")
+                
+        # Nettoyage des caches Python
+        if os.path.exists("__pycache__"):
+            shutil.rmtree("__pycache__")
+            
+    except Exception as e:
+        logger.error(f"Échec du nettoyage: {str(e)}")
+        raise
+
 def train_and_save_model():
     """Exécute le pipeline d'entraînement et sauvegarde le modèle"""
     try:
+        # Nettoyage complet avant démarrage
         clean_previous_files()
         
-        # Charger les variables d'environnement
+        # Chargement des variables d'environnement
         load_dotenv()
         
-        MONGO_CONNECTION_STRING = "mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority"
+        # Configuration MongoDB
+        MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://dghaiesoumaima0:2QM6D3ftO5H6TxH9@cluster0.g1zvwyt.mongodb.net/?retryWrites=true&w=majority")
         DB_NAME = os.getenv("DB_NAME", "reservation")
         COLLECTION_NAME = os.getenv("COLLECTION_NAME", "ListTransitaire")
-        
-        if not MONGO_CONNECTION_STRING:
-            raise ValueError("L'URI MongoDB n'est pas configurée")
 
         logger.info("=== DÉMARRAGE DE L'ENTRAÎNEMENT ===")
-        logger.info(f"Connexion à MongoDB - DB: {DB_NAME}, Collection: {COLLECTION_NAME}")
         
         # Exécution du pipeline
         model = run_ml_pipeline(
-            MONGO_CONNECTION_STRING,
+            MONGO_URI,
             DB_NAME,
             COLLECTION_NAME
         )
         
         if model is None:
-            raise ValueError("Le pipeline a retourné None")
-            
-        # Sauvegarde du nouveau modèle
-        joblib.dump(model, "best_model.pkl")
-        logger.info("Nouveau modèle sauvegardé dans best_model.pkl")
+            raise ValueError("Aucun modèle retourné par le pipeline")
+
+        # Sauvegarde du modèle
+        model_path = "best_model.pkl"
+        joblib.dump(model, model_path)
         
-        # Vérification de la sauvegarde
-        if not os.path.exists("best_model.pkl"):
-            raise FileNotFoundError("Le modèle n'a pas été sauvegardé correctement")
+        # Vérification robuste
+        if not os.path.exists(model_path):
+            raise FileNotFoundError("Échec de la sauvegarde du modèle")
             
-        # Informations de debug
-        file_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
-        mod_time = datetime.fromtimestamp(os.path.getmtime("best_model.pkl"))
-        logger.info(f"Taille du modèle: {file_size:.2f} MB")
-        logger.info(f"Dernière modification: {mod_time}")
+        # Log des métadonnées
+        file_stats = os.stat(model_path)
+        logger.info(f"""
+        Modèle sauvegardé:
+        - Chemin: {os.path.abspath(model_path)}
+        - Taille: {file_stats.st_size / (1024 * 1024):.2f} MB
+        - Dernière modification: {datetime.fromtimestamp(file_stats.st_mtime)}
+        """)
         
-        # Sauvegarde supplémentaire avec timestamp
+        # Sauvegarde de backup
         os.makedirs("model_backups", exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = f"model_backups/best_model_{timestamp}.pkl"
         joblib.dump(model, backup_path)
-        logger.info(f"Backup du modèle créé: {backup_path}")
+        logger.info(f"Backup créé: {backup_path}")
         
         return True
 
     except Exception as e:
-        logger.error(f"Échec critique de l'entraînement: {str(e)}", exc_info=True)
+        logger.error(f"ERREUR: {str(e)}", exc_info=True)
         return False
 
 if __name__ == "__main__":
     logger.info("=== LANCEMENT DU SCRIPT ===")
     success = train_and_save_model()
     
-    # Debug supplémentaire
-    if os.path.exists("best_model.pkl"):
-        logger.info(f"Vérification finale - Modèle existe, modifié le: {datetime.fromtimestamp(os.path.getmtime('best_model.pkl'))}")
+    # Vérification finale
+    model_path = "best_model.pkl"
+    if os.path.exists(model_path):
+        mod_time = datetime.fromtimestamp(os.path.getmtime(model_path))
+        logger.info(f"SUCCÈS: Modèle disponible (modifié à {mod_time})")
     else:
-        logger.error("Vérification finale - Modèle non trouvé!")
+        logger.error("ÉCHEC: Aucun modèle généré")
     
     exit(0 if success else 1)
