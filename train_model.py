@@ -63,27 +63,38 @@ def train_and_save_model():
         logger.info(f"Connexion à MongoDB - DB: {DB_NAME}, Collection: {COLLECTION_NAME}")
         
         # Exécution du pipeline
-        model = run_ml_pipeline(
+        result_df = run_ml_pipeline(
             MONGO_CONNECTION_STRING,
             DB_NAME,
             COLLECTION_NAME
         )
         
-        if model is None:
+        if result_df is None:
             logger.error("Le pipeline a retourné None, vérifiez les logs précédents")
             return False
             
-        # Sauvegarde du modèle
-        save_model(model)
-        
-        # Vérification
-        if os.path.exists("best_model.pkl"):
-            model_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
-            logger.info(f"Modèle sauvegardé (taille: {model_size:.2f} MB)")
-            return True
+        # Charger le meilleur modèle depuis MLflow
+        try:
+            production_model = load_production_model()
+            if production_model is None:
+                logger.error("Aucun modèle en production trouvé dans MLflow")
+                return False
+                
+            # Sauvegarde du modèle
+            save_model(production_model)
             
-        logger.error("Aucun modèle n'a été sauvegardé dans best_model.pkl")
-        return False
+            # Vérification
+            if os.path.exists("best_model.pkl"):
+                model_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
+                logger.info(f"Modèle sauvegardé (taille: {model_size:.2f} MB)")
+                return True
+                
+            logger.error("Aucun modèle n'a été sauvegardé dans best_model.pkl")
+            return False
+
+        except Exception as e:
+            logger.error(f"Échec du chargement du modèle depuis MLflow: {str(e)}", exc_info=True)
+            return False
 
     except Exception as e:
         logger.error(f"Échec de l'entraînement: {str(e)}", exc_info=True)
