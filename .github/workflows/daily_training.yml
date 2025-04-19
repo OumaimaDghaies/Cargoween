@@ -64,3 +64,20 @@ jobs:
         git add best_model.pkl model_backups/*
         git commit -m "Update model ${{ github.run_id }}"
         git push
+
+    - name: Send email notification
+      if: always()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_SENDER }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "Workflow ${{ github.workflow }} - ${{ job.status }}"
+        html_body: |
+          <p><strong>Statut</strong>: ${{ job.status }}</p>
+          <p><strong>Dépôt</strong>: ${{ github.repository }}</p>
+          <p><strong>Lien</strong>: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Voir le workflow</a></p>
+        to: ${{ secrets.EMAIL_RECIPIENT }}
+        from: GitHub Actions
+        secure: true
