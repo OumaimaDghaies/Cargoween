@@ -114,21 +114,8 @@ def prepare_for_ml(df, target_col='Prix KM'):
     return X, y, scaler, {'numeric': numeric_imputer, 'categorical': categorical_imputer}, encoders, feature_names
 
 def train_and_evaluate_models(X, y, feature_names=None):
-    os.environ['MLFLOW_TRACKING_URI'] = "http://34.76.105.165:5000"
-    os.environ['MLFLOW_DISABLE_LOCAL_BACKEND'] = "true"
-    
-    mlflow.set_tracking_uri("http://34.76.105.165:5000")
-    
-    # Force le mode distant uniquement
-    from mlflow.tracking import _tracking_service
-    _tracking_service._tracking_uri = "http://34.76.105.165:5000"
-    
-    # Désactive complètement le backend local
-    from mlflow.utils import env
-    env._DISABLE_LOCAL_BACKEND = True
-    
-    # Vérification
-    print(f"Tracking URI vérifié: {mlflow.get_tracking_uri()}")
+    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow.set_experiment("Transport_Logistique_Optimization")
 
     models = {
         "KNN": KNeighborsClassifier(n_neighbors=5),
