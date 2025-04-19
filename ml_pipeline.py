@@ -114,20 +114,18 @@ def prepare_for_ml(df, target_col='Prix KM'):
     return X, y, scaler, {'numeric': numeric_imputer, 'categorical': categorical_imputer}, encoders, feature_names
 
 def train_and_evaluate_models(X, y, feature_names=None):
-    # Configurer MLflow pour utiliser uniquement le serveur distant
+    # Configuration stricte pour le serveur distant
     mlflow.set_tracking_uri("http://34.76.105.165:5000")
-    mlflow.set_experiment("Transport_Logistique_Optimization")
-    
-    # Désactiver complètement le stockage local
     mlflow.set_registry_uri("http://34.76.105.165:5000")
     
-    # Forcer le mode distant seulement
+    # Désactiver complètement le stockage local
     os.environ['MLFLOW_TRACKING_URI'] = "http://34.76.105.165:5000"
     os.environ['MLFLOW_REGISTRY_URI'] = "http://34.76.105.165:5000"
+    os.environ['MLFLOW_ARTIFACT_ROOT'] = "gs://my-mlflow-buckett/mlflow"  # Si vous utilisez GCS
     
-    # Configuration pour Google Cloud
-    client = MlflowClient(tracking_uri="http://34.76.105.165:5000")
-
+    # Forcer MLflow à ignorer les chemins locaux
+    mlflow.tracking._TRACKING_URI = "http://34.76.105.165:5000"
+    mlflow.tracking.artifact_utils._artifact_storage = "gs://my-mlflow-buckett/mlflow" 
 
     models = {
         "KNN": KNeighborsClassifier(n_neighbors=5),
