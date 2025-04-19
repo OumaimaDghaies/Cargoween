@@ -17,12 +17,30 @@ from mlflow.tracking import MlflowClient
 from pymongo.server_api import ServerApi
 import tempfile
 import os
+from google.cloud import storage
+from datetime import datetime
+
+# Configuration initiale MLflow avec GCS
+def setup_mlflow_gcp():
+    """Configure MLflow pour utiliser GCS comme backend"""
+    # Configuration pour GCS
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'gcp-service-account.json'
+    
+    # URL de votre serveur MLflow sur la VM
+    mlflow.set_tracking_uri("http://34.76.105.165:5000")
+    mlflow.set_experiment("Transport_Logistique_GCP")
+    
+    # Configuration du stockage GCS pour les artefacts
+    os.environ['MLFLOW_S3_ENDPOINT_URL'] = 'https://storage.googleapis.com'
+    os.environ['AWS_ACCESS_KEY_ID'] = os.getenv('GCS_ACCESS_KEY')
+    os.environ['AWS_SECRET_ACCESS_KEY'] = os.getenv('GCS_SECRET_KEY')
+
 def load_and_prepare_data(connection_string, db_name, collection_name):
     client = MongoClient(
         connection_string,
         server_api=ServerApi('1'),
         tls=True,
-        tlsAllowInvalidCertificates=True  # Nécessaire dans certains environnements CI
+        tlsAllowInvalidCertificates=True
     )
     
     try:
@@ -114,9 +132,8 @@ def prepare_for_ml(df, target_col='Prix KM'):
     return X, y, scaler, {'numeric': numeric_imputer, 'categorical': categorical_imputer}, encoders, feature_names
 
 def train_and_evaluate_models(X, y, feature_names=None):
-    mlflow.set_tracking_uri("http://localhost:5000")
-    mlflow.set_experiment("Transport_Logistique_Optimization")
-
+    setup_mlflow_gcp()
+    
     models = {
         "KNN": KNeighborsClassifier(n_neighbors=5),
         "RandomForest": RandomForestClassifier(n_estimators=100, random_state=42),
@@ -133,25 +150,40 @@ def train_and_evaluate_models(X, y, feature_names=None):
     results = {}
 
     for name, model in models.items():
-        with mlflow.start_run(nested=True, run_name=name):
+        with mlflow.start_run(run_name=f"{name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
             try:
                 model.fit(X_train, y_train)
                 y_pred = model.predict(X_test)
                 accuracy = accuracy_score(y_test, y_pred)
                 
+                # Log des paramètres et métriques
                 mlflow.log_params(model.get_params())
                 mlflow.log_metrics({
                     "accuracy": accuracy,
-                    "precision": precision_score(y_test, y_pred, pos_label='élevé'),
-                    "recall": recall_score(y_test, y_pred, pos_label='élevé')
+                    "precision_elevé": precision_score(y_test, y_pred, pos_label='élevé'),
+                    "recall_elevé": recall_score(y_test, y_pred, pos_label='élevé'),
+                    "precision_faible": precision_score(y_test, y_pred, pos_label='faible'),
+                    "recall_faible": recall_score(y_test, y_pred, pos_label='faible')
+                })
+                
+                # Log des tags
+                mlflow.set_tags({
+                    "team": "data_science",
+                    "project": "transport_logistique",
+                    "model_type": name,
+                    "data_source": "mongodb"
                 })
 
+                # Signature du modèle
                 signature = infer_signature(X_train, model.predict(X_train))
+                
+                # Enregistrement du modèle avec GCS
                 mlflow.sklearn.log_model(
                     model,
                     artifact_path=f"{name.lower()}_model",
                     signature=signature,
-                    registered_model_name="Transport_Logistique_Model"
+                    registered_model_name="Transport_Logistique_Model",
+                    extra_pip_requirements=["scikit-learn", "mlflow"]
                 )
 
                 results[name] = {
@@ -178,15 +210,22 @@ def train_and_evaluate_models(X, y, feature_names=None):
             stage="Production"
         )
         print(f"\n✅ Meilleur modèle ({best_model}) marqué comme 'Production' dans MLflow.")
+        
+        # Ajout d'une description au modèle
+        client.update_model_version(
+            name="Transport_Logistique_Model",
+            version=model_version,
+            description=f"Meilleur modèle ({best_model}) entraîné le {datetime.now().strftime('%Y-%m-%d')} avec accuracy: {best_score:.2f}"
+        )
 
     return results, best_model, X_test, y_test
 
 def load_production_model():
+    setup_mlflow_gcp()
     client = MlflowClient()
     model_name = "Transport_Logistique_Model"
     
     try:
-        # Alternative à get_latest_versions
         latest_versions = client.search_model_versions(f"name='{model_name}'")
         prod_models = [v for v in latest_versions if v.current_stage == "Production"]
         
@@ -197,6 +236,7 @@ def load_production_model():
         model_uri = f"models:/{model_name}/{prod_model.version}"
         model = mlflow.sklearn.load_model(model_uri)
         print(f"\n✅ Modèle en production chargé : {prod_model.run_id}")
+        print(f"Version: {prod_model.version}, Description: {prod_model.description}")
         return model
     except Exception as e:
         print(f"\n❌ Erreur lors du chargement du modèle : {str(e)}")
@@ -227,7 +267,7 @@ def run_ml_pipeline(connection_string, db_name, collection_name):
         X, y, scaler, imputer, encoders, feature_names = prepare_for_ml(df)
         print("\n✅ Données préparées pour le ML:")
         print(f"- Nombre de caractéristiques: {len(feature_names)}")
-        print(f"- Distribution des classes: {dict(zip(*np.unique(y, return_counts=True)))}")
+        print(f"- Distribution des classes: {dict(zip(*np.unique(y, return_counts=True))}")
     except Exception as e:
         print(f"\n❌ Erreur lors de la préparation des données: {str(e)}")
         return None
@@ -247,12 +287,20 @@ def run_ml_pipeline(connection_string, db_name, collection_name):
         return None
 
     try:
-        joblib.dump({
-            'model': results[best_model_name]['model'],
-            'scaler': scaler,
-            'feature_names': feature_names,
-            'encoders': encoders
-        }, "best_model.pkl")
+        model_package = {
+            "model": results[best_model_name]['model'],
+            "scaler": scaler,
+            "feature_names": feature_names,
+            "encoders": encoders,
+            "metadata": {
+                "training_time": datetime.now().isoformat(),
+                "mlflow_run_id": best_run_id,
+                "git_commit": os.getenv("GIT_COMMIT", "unknown"),
+                "version": os.getenv("MODEL_VERSION", "1.0.0")
+            }
+        }
+        
+        joblib.dump(model_package, "best_model.pkl")
         print("\n💾 Modèle sauvegardé localement dans 'best_model.pkl'")
 
         production_model = load_production_model()
@@ -260,8 +308,4 @@ def run_ml_pipeline(connection_string, db_name, collection_name):
         if production_model:
             sample_data = X[:1]
             prediction = production_model.predict(sample_data)
-            print(f"\n🔮 Test de prédiction du modèle en production : {prediction}")
-    except Exception as e:
-        print(f"\n❌ Erreur lors de la gestion des modèles: {str(e)}")
-
-    return df
+            print(f"\n🔮 Test de
