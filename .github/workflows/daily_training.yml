@@ -43,18 +43,17 @@ jobs:
     - name: Run training
       env:
         MLFLOW_TRACKING_URI: "http://34.76.105.165:5000"
-        MLFLOW_REGISTRY_URI: "http://34.76.105.165:5000"
-        MLFLOW_ARTIFACT_ROOT: "gs://your-bucket/mlflow"  # Optionnel si vous utilisez GCS
-        GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcloud-key.json"
+        MLFLOW_DISABLE_LOCAL_BACKEND: "true"
       run: |
-        # Écriture de la clé GCP temporaire
-        echo '${{ secrets.GCP_SA_KEY }}' > /tmp/gcloud-key.json
+        # Test de connexion au serveur
+        curl -v http://34.76.105.165:5000
         
-        # Exécution avec debug
+        # Exécution avec logging détaillé
         python -c "
-        import mlflow
-        print('MLflow Tracking URI:', mlflow.get_tracking_uri())
-        print('MLflow Registry URI:', mlflow.get_registry_uri())
+        import mlflow, os
+        print('ENV:', dict(os.environ))
+        mlflow.set_tracking_uri('http://34.76.105.165:5000')
+        print('Active URI:', mlflow.get_tracking_uri())
         "
         
         python train_model.py
