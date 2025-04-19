@@ -115,15 +115,9 @@ def prepare_for_ml(df, target_col='Prix KM'):
 
 def train_and_evaluate_models(X, y, feature_names=None):
     # Configurer MLflow pour utiliser uniquement le serveur distant
-    mlflow.set_tracking_uri("http://34.76.105.165:5000")
+    mlflow.set_tracking_uri("http://0.0.0.0:5000")
     mlflow.set_experiment("Transport_Logistique_Optimization")
 
-    # Forcer MLflow à utiliser un répertoire temporaire
-    os.environ['MLFLOW_ARTIFACT_ROOT'] = mkdtemp()
-    os.environ['MLFLOW_TRACKING_DIR'] = mkdtemp()
-    
-    # Désactiver le tracking local
-    mlflow.tracking._TRACKING_URI = "http://34.76.105.165:5000"
 
     models = {
         "KNN": KNeighborsClassifier(n_neighbors=5),
