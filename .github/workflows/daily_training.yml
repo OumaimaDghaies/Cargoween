@@ -1,4 +1,4 @@
-name: Daily Model Training
+name: Daily Model Training and Monitoring
 
 on:
   schedule:
@@ -29,7 +29,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install python-dotenv pymongo mlflow pymongo[srv] gitpython
+        pip install python-dotenv pymongo mlflow pymongo[srv] gitpython pandas matplotlib
 
     - name: Create MLflow directory
       run: mkdir -p mlruns
@@ -57,15 +57,77 @@ jobs:
         
         python -c "import joblib; print('=== METADONNEES ===', joblib.load('best_model.pkl')['metadata'])"
 
+    - name: Generate MLflow Monitoring Report
+      run: |
+        python -c "
+        import mlflow
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        from datetime import datetime
+        
+        # Connexion au serveur MLflow
+        mlflow.set_tracking_uri('http://34.76.105.165:5000')
+        
+        # Récupérer tous les modèles
+        experiments = mlflow.search_experiments()
+        
+        # Créer un DataFrame avec les métriques
+        metrics_data = []
+        for exp in experiments:
+            runs = mlflow.search_runs(experiment_ids=[exp.experiment_id])
+            for _, run in runs.iterrows():
+                if 'metrics' in run:
+                    metrics_data.append({
+                        'experiment_id': exp.experiment_id,
+                        'run_id': run.run_id,
+                        'start_time': datetime.fromtimestamp(run.start_time/1000),
+                        'model_name': run.tags.get('mlflow.runName', 'N/A'),
+                        **run.metrics
+                    })
+        
+        df = pd.DataFrame(metrics_data)
+        
+        # Générer des graphiques
+        if not df.empty:
+            # Graphique d'évolution des métriques
+            plt.figure(figsize=(12, 6))
+            for metric in ['accuracy', 'precision', 'recall', 'f1']:
+                if metric in df.columns:
+                    plt.plot(df['start_time'], df[metric], label=metric)
+            plt.title('Evolution des métriques de performance')
+            plt.xlabel('Date')
+            plt.ylabel('Valeur')
+            plt.legend()
+            plt.grid()
+            plt.savefig('metrics_evolution.png')
+            plt.close()
+            
+            # Statistiques des modèles
+            stats = df.describe().to_markdown()
+            with open('model_stats.md', 'w') as f:
+                f.write(f'# Statistiques des modèles\n\n{stats}')
+        else:
+            with open('model_stats.md', 'w') as f:
+                f.write('# Aucun modèle trouvé dans MLflow')
+        "
+
+    - name: Upload Monitoring Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: mlflow-monitoring-report
+        path: |
+          metrics_evolution.png
+          model_stats.md
+
     - name: Push to GitHub
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git add best_model.pkl model_backups/*
-        git commit -m "Update model ${{ github.run_id }}"
+        git add best_model.pkl model_backups/* metrics_evolution.png model_stats.md
+        git commit -m "Update model and monitoring ${{ github.run_id }}"
         git push
 
-    - name: Send email notification
+    - name: Send email notification with monitoring
       if: always()
       uses: dawidd6/action-send-mail@v3
       with:
@@ -78,6 +140,13 @@ jobs:
           <p><strong>Statut</strong>: ${{ job.status }}</p>
           <p><strong>Dépôt</strong>: ${{ github.repository }}</p>
           <p><strong>Lien</strong>: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Voir le workflow</a></p>
+          <p><strong>Monitoring MLflow</strong>:</p>
+          <p>Évolution des métriques:</p>
+          <img src="cid:metrics_evolution.png" alt="Évolution des métriques" style="max-width: 100%;">
+          <p>Consultez les artefacts pour le rapport complet.</p>
         to: ${{ secrets.EMAIL_RECIPIENT }}
         from: GitHub Actions
         secure: true
+        attach_files: |
+          metrics_evolution.png
+          model_stats.md
