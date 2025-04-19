@@ -116,6 +116,10 @@ def train_and_evaluate_models(X, y, feature_names=None):
     mlflow.set_tracking_uri("http://34.76.105.165:5000")
     mlflow.set_experiment("Transport_Logistique_Optimization")
 
+    import tempfile
+    import os
+    os.environ['MLFLOW_ARTIFACT_ROOT'] = tempfile.mkdtemp()
+
     models = {
         "KNN": KNeighborsClassifier(n_neighbors=5),
         "RandomForest": RandomForestClassifier(n_estimators=100, random_state=42),
