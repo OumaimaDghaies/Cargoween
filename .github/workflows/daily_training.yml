@@ -12,7 +12,7 @@ jobs:
   train-model:
     runs-on: ubuntu-latest
     env:
-      MLFLOW_TRACKING_URI: http://localhost:5000
+      MLFLOW_TRACKING_URI: http://34.76.105.165:5000
       DB_NAME: reservation
       COLLECTION_NAME: ListTransitaire
       MODEL_VERSION: ${{ github.run_id }}
