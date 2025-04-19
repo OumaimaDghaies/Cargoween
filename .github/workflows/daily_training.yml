@@ -8,40 +8,54 @@ on:
 permissions:
   contents: write
   
-env:
-  MLFLOW_TRACKING_URI: http://34.76.105.165:5000
-  GCS_BUCKET: my-mlflow-buckett
-
 jobs:
   train-model:
     runs-on: ubuntu-latest
+    env:
+      MLFLOW_TRACKING_URI: http://34.76.105.165:5000
+      DB_NAME: reservation
+      COLLECTION_NAME: ListTransitaire
+      MODEL_VERSION: ${{ github.run_id }}
+
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup GCP Auth
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-
+    
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install google-cloud-storage mlflow
+        pip install python-dotenv pymongo mlflow pymongo[srv] gitpython
+
+    - name: Create MLflow directory
+      run: mkdir -p mlruns
+
+    - name: Start MLflow server (background)
+      run: |
+        mlflow server --backend-store-uri sqlite:///mlruns/mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 &
+        sleep 5
 
     - name: Run training
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
       run: |
-        echo "${{ secrets.GCP_SA_KEY }}" > gcp-service-account.json
+        if [ -f "best_model.pkl" ]; then
+          rm -f best_model.pkl
+          echo "Ancien modèle supprimé"
+        fi
+        
         python train_model.py
+        
+        if [ ! -f "best_model.pkl" ]; then
+          echo "ERREUR: best_model.pkl manquant"
+          exit 1
+        fi
+        
+        python -c "import joblib; print('=== METADONNEES ===', joblib.load('best_model.pkl')['metadata'])"
 
     - name: Push to GitHub
       run: |
