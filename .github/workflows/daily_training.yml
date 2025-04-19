@@ -31,17 +31,13 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv pymongo mlflow pymongo[srv] gitpython
 
-    - name: Create MLflow directory
-      run: mkdir -p mlruns
-
-    - name: Start MLflow server (background)
-      run: |
-        mlflow server --backend-store-uri sqlite:///mlruns/mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 &
-        sleep 5
+    - name: Create temp directory for MLflow
+      run: mkdir -p ./mlflow_temp
 
     - name: Run training
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
+        MLFLOW_ARTIFACT_ROOT: ./mlflow_temp
       run: |
         if [ -f "best_model.pkl" ]; then
           rm -f best_model.pkl
@@ -56,7 +52,6 @@ jobs:
         fi
         
         python -c "import joblib; print('=== METADONNEES ===', joblib.load('best_model.pkl')['metadata'])"
-
     - name: Push to GitHub
       run: |
         git config --global user.name "GitHub Actions"
