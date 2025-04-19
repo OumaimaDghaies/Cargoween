@@ -115,8 +115,18 @@ def prepare_for_ml(df, target_col='Prix KM'):
 
 def train_and_evaluate_models(X, y, feature_names=None):
     # Configurer MLflow pour utiliser uniquement le serveur distant
-    mlflow.set_tracking_uri("http://0.0.0.0:5000")
+    mlflow.set_tracking_uri("http://34.76.105.165:5000")
     mlflow.set_experiment("Transport_Logistique_Optimization")
+    
+    # Désactiver complètement le stockage local
+    mlflow.set_registry_uri("http://34.76.105.165:5000")
+    
+    # Forcer le mode distant seulement
+    os.environ['MLFLOW_TRACKING_URI'] = "http://34.76.105.165:5000"
+    os.environ['MLFLOW_REGISTRY_URI'] = "http://34.76.105.165:5000"
+    
+    # Configuration pour Google Cloud
+    client = MlflowClient(tracking_uri="http://34.76.105.165:5000")
 
 
     models = {
