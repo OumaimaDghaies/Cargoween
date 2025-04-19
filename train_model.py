@@ -56,40 +56,34 @@ def train_and_save_model():
         DB_NAME = os.getenv("DB_NAME", "reservation")
         COLLECTION_NAME = os.getenv("COLLECTION_NAME", "ListTransitaire")
         
+        if not MONGO_CONNECTION_STRING:
+            raise ValueError("L'URI MongoDB n'est pas configurée dans les variables d'environnement")
+
         logger.info("=== DÉMARRAGE DE L'ENTRAÎNEMENT ===")
         logger.info(f"Connexion à MongoDB - DB: {DB_NAME}, Collection: {COLLECTION_NAME}")
         
-        # Configurer les répertoires temporaires pour MLflow
-        os.makedirs("./mlflow_artifacts", exist_ok=True)
-        os.makedirs("./mlflow_tracking", exist_ok=True)
-        os.environ['MLFLOW_ARTIFACT_ROOT'] = os.path.abspath("./mlflow_artifacts")
-        os.environ['MLFLOW_TRACKING_DIR'] = os.path.abspath("./mlflow_tracking")
-        
         # Exécution du pipeline
-        result_df = run_ml_pipeline(
+        model = run_ml_pipeline(
             MONGO_CONNECTION_STRING,
             DB_NAME,
             COLLECTION_NAME
         )
         
-        if result_df is None:
+        if model is None:
             logger.error("Le pipeline a retourné None, vérifiez les logs précédents")
             return False
             
-        # Vérifier si un modèle a été enregistré dans MLflow
-        try:
-            model = load_production_model()
-            if model is None:
-                logger.error("Aucun modèle valide trouvé dans MLflow")
-                return False
-                
-            # Sauvegarde du modèle
-            save_model(model)
+        # Sauvegarde du modèle
+        save_model(model)
+        
+        # Vérification
+        if os.path.exists("best_model.pkl"):
+            model_size = os.path.getsize("best_model.pkl") / (1024 * 1024)  # Taille en MB
+            logger.info(f"Modèle sauvegardé (taille: {model_size:.2f} MB)")
             return True
             
-        except Exception as e:
-            logger.error(f"Erreur lors du chargement du modèle depuis MLflow: {str(e)}")
-            return False
+        logger.error("Aucun modèle n'a été sauvegardé dans best_model.pkl")
+        return False
 
     except Exception as e:
         logger.error(f"Échec de l'entraînement: {str(e)}", exc_info=True)
