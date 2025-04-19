@@ -15,7 +15,8 @@ import mlflow.sklearn
 from mlflow.models.signature import infer_signature
 from mlflow.tracking import MlflowClient
 from pymongo.server_api import ServerApi
-
+import tempfile
+import os
 def load_and_prepare_data(connection_string, db_name, collection_name):
     client = MongoClient(
         connection_string,
@@ -113,12 +114,16 @@ def prepare_for_ml(df, target_col='Prix KM'):
     return X, y, scaler, {'numeric': numeric_imputer, 'categorical': categorical_imputer}, encoders, feature_names
 
 def train_and_evaluate_models(X, y, feature_names=None):
+    # Configurer MLflow pour utiliser uniquement le serveur distant
     mlflow.set_tracking_uri("http://34.76.105.165:5000")
     mlflow.set_experiment("Transport_Logistique_Optimization")
 
-    import tempfile
-    import os
-    os.environ['MLFLOW_ARTIFACT_ROOT'] = tempfile.mkdtemp()
+    # Forcer MLflow à utiliser un répertoire temporaire
+    os.environ['MLFLOW_ARTIFACT_ROOT'] = mkdtemp()
+    os.environ['MLFLOW_TRACKING_DIR'] = mkdtemp()
+    
+    # Désactiver le tracking local
+    mlflow.tracking._TRACKING_URI = "http://34.76.105.165:5000"
 
     models = {
         "KNN": KNeighborsClassifier(n_neighbors=5),
