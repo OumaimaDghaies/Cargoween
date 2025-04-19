@@ -12,7 +12,7 @@ jobs:
   train-model:
     runs-on: ubuntu-latest
     env:
-      MLFLOW_TRACKING_URI: http://34.76.105.165:5000
+      MLFLOW_TRACKING_URI: http://http://127.0.0.1:5000
       DB_NAME: reservation
       COLLECTION_NAME: ListTransitaire
       MODEL_VERSION: ${{ github.run_id }}
@@ -36,10 +36,8 @@ jobs:
 
     - name: Start MLflow server (background)
       run: |
-        mlflow server \
-        --backend-store-uri sqlite:///mlflow.db \
-        --default-artifact-root gs://my-mlflow-buckett/mlflow-artifacts \
-        --host 0.0.0.0
+        mlflow server --backend-store-uri sqlite:///mlruns/mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 &
+        sleep 5
 
     - name: Run training
       env:
