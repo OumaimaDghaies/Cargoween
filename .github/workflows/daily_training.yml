@@ -31,23 +31,26 @@ jobs:
         pip install -r requirements.txt
         pip install python-dotenv pymongo mlflow pymongo[srv] gitpython
 
-    - name: Create temp directory for MLflow
-      run: mkdir -p ./mlflow_temp
+    - name: Create temp directories
+      run: |
+        mkdir -p ./mlflow_artifacts
+        mkdir -p ./mlflow_tracking
 
     - name: Run training
       env:
         MONGO_URI: ${{ secrets.MONGO_URI }}
-        MLFLOW_ARTIFACT_ROOT: ./mlflow_temp
+        MLFLOW_ARTIFACT_ROOT: ./mlflow_artifacts
+        MLFLOW_TRACKING_DIR: ./mlflow_tracking
       run: |
-        if [ -f "best_model.pkl" ]; then
-          rm -f best_model.pkl
-          echo "Ancien modèle supprimé"
-        fi
+        # Supprimer l'ancien modèle si existant
+        [ -f "best_model.pkl" ] && rm -f best_model.pkl
         
+        # Exécuter l'entraînement
         python train_model.py
         
+        # Vérifier si le modèle a été créé
         if [ ! -f "best_model.pkl" ]; then
-          echo "ERREUR: best_model.pkl manquant"
+          echo "::error::ERREUR: best_model.pkl manquant"
           exit 1
         fi
         
