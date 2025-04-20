@@ -36,8 +36,7 @@ jobs:
 
     - name: Start MLflow server (background)
       run: |
-        mlflow server --backend-store-uri sqlite:///mlruns/mlflow.db --default-artifact-root ./mlruns --host 0.0.0.0 &
-        sleep 5
+        mlflow ui
 
     - name: Run training
       env:
